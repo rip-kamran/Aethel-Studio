@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aethel Studios</title>
+  <style>
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --border: #2a2a3a;
+      --accent: #7c6dfa;
+      --accent-dim: #4a3faa;
+      --text: #e8e8f0;
+      --muted: #888899;
+      --success: #4ade80;
+      --warning: #facc15;
+      --error: #f87171;
+      --running: #60a5fa;
+      --radius: 10px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; padding: 24px 16px; }
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+    header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+    header span { color: var(--accent); }
+    .pill { background: var(--accent-dim); color: var(--accent); font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+    .card h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 14px; }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+    textarea, select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--font); font-size: 0.95rem; padding: 10px 12px; resize: vertical; }
+    textarea { min-height: 100px; }
+    select { cursor: pointer; }
+    button { margin-top: 12px; width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; padding: 12px; cursor: pointer; transition: opacity 0.15s; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button:not(:disabled):active { opacity: 0.8; }
+    #status-msg { margin-top: 10px; font-size: 0.85rem; color: var(--muted); min-height: 18px; }
+    #status-msg.err { color: var(--error); }
+    #status-msg.ok  { color: var(--success); }
+    .health-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; padding: 4px 0; }
+    .health-row span:first-child { color: var(--muted); }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .dot.on  { background: var(--success); }
+    .dot.off { background: var(--error); }
+    #task-list { list-style: none; }
+    #task-list li { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; font-size: 0.85rem; }
+    .task-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+    .task-desc { font-weight: 500; line-height: 1.4; word-break: break-word; }
+    .badge { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
+    .badge.pending   { background: #2a2a1a; color: var(--warning); }
+    .badge.running   { background: #1a2a3a; color: var(--running); }
+    .badge.completed { background: #1a2a1a; color: var(--success); }
+    .badge.failed    { background: #2a1a1a; color: var(--error); }
+    .task-meta { color: var(--muted); font-size: 0.75rem; margin-bottom: 6px; }
+    .task-result { background: var(--surface); border-radius: 6px; padding: 8px 10px; white-space: pre-wrap; word-break: break-word; line-height: 1.5; max-height: 200px; overflow-y: auto; font-size: 0.82rem; }
+    .task-result.err { color: var(--error); }
+    .empty { text-align: center; color: var(--muted); padding: 24px 0; font-size: 0.9rem; }
+    .refresh-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 0.78rem; font-weight: 500; margin-top: 0; padding: 6px 12px; width: auto; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Aethel <span>Studios</span></h1>
+    <div class="pill">alpha</div>
+  </header>
+
+  <div class="card">
+    <h2>System</h2>
+    <div class="health-row"><span>Status</span><span id="h-status">—</span></div>
+    <div class="health-row"><span>Uptime</span><span id="h-uptime">—</span></div>
+    <div class="health-row"><span>Tasks</span><span id="h-tasks">—</span></div>
+    <div class="health-row"><span>Anthropic</span><span id="h-anthropic">—</span></div>
+    <div class="health-row"><span>OpenAI</span><span id="h-openai">—</span></div>
+    <div class="health-row"><span>Gemini</span><span id="h-gemini">—</span></div>
+  </div>
+
+  <div class="card">
+    <h2>New Task</h2>
+    <label for="task-desc">Description</label>
+    <textarea id="task-desc" placeholder="Describe what you want the AI to do…"></textarea>
+    <label for="task-provider" style="margin-top:10px">Provider</label>
+    <select id="task-provider">
+      <option value="anthropic">Anthropic (Claude)</option>
+      <option value="openai">OpenAI (GPT-4o mini)</option>
+      <option value="gemini">Google (Gemini 1.5 Flash)</option>
+    </select>
+    <button id="submit-btn">Run Task</button>
+    <div id="status-msg"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="display:flex;justify-content:space-between;align-items:center">
+      Recent Tasks
+      <button class="refresh-btn" id="refresh-btn">↻ Refresh</button>
+    </h2>
+    <ul id="task-list"><li class="empty">Loading…</li></ul>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    async function loadHealth() {
+      try {
+        const r = await fetch('/health');
+        const d = await r.json();
+        $('h-status').innerHTML = '<span class="dot on"></span>Online';
+        $('h-uptime').textContent = formatUptime(d.uptime);
+        $('h-tasks').textContent = d.taskCount;
+        const provDot = ok => `<span class="dot ${ok ? 'on' : 'off'}"></span>${ok ? 'Configured' : 'Not set'}`;
+        $('h-anthropic').innerHTML = provDot(d.providers.anthropic);
+        $('h-openai').innerHTML    = provDot(d.providers.openai);
+        $('h-gemini').innerHTML    = provDot(d.providers.gemini);
+      } catch {
+        $('h-status').innerHTML = '<span class="dot off"></span>Offline';
+      }
+    }
+
+    function formatUptime(s) {
+      const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
+      return h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+    }
+
+    async function loadTasks() {
+      try {
+        const r = await fetch('/tasks');
+        renderTasks(await r.json());
+      } catch {
+        $('task-list').innerHTML = '<li class="empty">Could not load tasks.</li>';
+      }
+    }
+
+    function renderTasks(tasks) {
+      const list = $('task-list');
+      if (!tasks.length) { list.innerHTML = '<li class="empty">No tasks yet. Submit one above.</li>'; return; }
+      list.innerHTML = tasks.map(t => {
+        const date = new Date(t.createdAt).toLocaleString();
+        const body = t.status === 'completed'
+          ? `<div class="task-result">${esc(t.result ?? '')}</div>`
+          : t.status === 'failed'
+          ? `<div class="task-result err">${esc(t.error ?? 'Unknown error')}</div>`
+          : '';
+        return `<li>
+          <div class="task-header"><div class="task-desc">${esc(t.description)}</div><span class="badge ${t.status}">${t.status}</span></div>
+          <div class="task-meta">${t.provider} · ${date}</div>${body}
+        </li>`;
+      }).join('');
+    }
+
+    function esc(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    $('submit-btn').addEventListener('click', async () => {
+      const desc = $('task-desc').value.trim();
+      const provider = $('task-provider').value;
+      const msg = $('status-msg'), btn = $('submit-btn');
+      if (!desc) { msg.textContent = 'Please enter a task description.'; msg.className = 'err'; return; }
+      btn.disabled = true;
+      msg.textContent = 'Submitting…'; msg.className = '';
+      try {
+        const r = await fetch('/task', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description: desc, provider }),
+        });
+        if (!r.ok) { const e = await r.json(); throw new Error(e.error ?? 'Unknown error'); }
+        const task = await r.json();
+        msg.textContent = `Task ${task.id.slice(0,8)}… queued. Refreshing in 3s…`;
+        msg.className = 'ok';
+        $('task-desc').value = '';
+        setTimeout(() => { void loadTasks(); void loadHealth(); msg.textContent = ''; }, 3000);
+      } catch (err) {
+        msg.textContent = err.message; msg.className = 'err';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    $('refresh-btn').addEventListener('click', () => { void loadTasks(); void loadHealth(); });
+    void loadHealth();
+    void loadTasks();
+    setInterval(() => { void loadTasks(); void loadHealth(); }, 10000);
+  </script>
+</body>
+</html>
